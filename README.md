@@ -11,6 +11,7 @@ Hash Table
 - Hash keys are based off of the song's title
 - Stores the heap index of songs in order to access songs in the heap in constant runtime
 - Updates indexes of the songs after they are played
+- Uses chaining to solve collisions
 
 MusicPlayer.cpp contains the implementation of every action
 
