@@ -14,6 +14,7 @@ Hash Table
 
 MusicPlayer.cpp contains the implementation of every action
 Song.cpp and Time.cpp contain mostly just overloading operators, making it easier to read commands using cin
+
 Accepts the following actions and parameters in the following format:
 RUN [filename]            
 - Runs a file with filename
