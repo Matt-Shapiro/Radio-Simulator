@@ -1,15 +1,15 @@
 #include "MusicPlayer.h"
 MusicPlayer::MusicPlayer(){
-	initSet = false;
+	initSet = false; //init may only be set one time
 }
 
 MusicPlayer::~MusicPlayer(){
 	for (int i = 0; i < numSongs; i++){
-		int hash = hashFunction(library[i].getSongTitle());
+		int hash = hashFunction(library[i].getSongTitle());	//find index of song in hash table
 		node* np;
 		for(np = hashTable[hash]; np != NULL; np = np -> next){
 			if (np -> index == i && np != NULL)
-				delete np;
+				delete np;				//deletes each element of the linked list at the hash location
 		}
 	}
 	delete[] library;
@@ -20,7 +20,7 @@ void MusicPlayer::run(char filename[]){
 	string command;
 	char space;
 	fstream x(filename);
-	while(!x.eof() && command != "QUIT"){
+	while(!x.eof() && command != "QUIT"){			//while loop that accepts commands from a file until QUIT
 		x >> command;
 		if (command == "QUIT"){
 			cout << "entering quit function" << endl;
@@ -44,18 +44,18 @@ void MusicPlayer::run(char filename[]){
 		}
 		if (command == "LIKE"){
 			string title;
-			int check = x.peek();
-			if (isblank(check)>0){
-				x >> title;
+			int check = x.peek();			//peek() takes the next character without advancing the stream 
+			if (isblank(check)>0){			//Differentiates between liking song titles or liking the last played
+				x >> title;		
 			}
-			else {title = "";}
+			else {title = "";}			//If title is blank, the LIKE function likes the last played song
 			like(title);
 		}
 
 		if (command == "DISLIKE"){
 			string title;
 			int check = x.peek();
-			if (isblank(check) > 0)
+			if (isblank(check) > 0)			//Differentiates between disliking song titles or disliking the last played
 				x>> title;
 			else {title = "";}
 			this -> dislike(title);
@@ -65,7 +65,7 @@ void MusicPlayer::run(char filename[]){
 			x >> n; 
 			this -> play(n);
 		}
-		x.ignore(256,'\n');	
+		x.ignore(256,'\n');		//ignores any extra spaces/characters that might be at the end of a command
 	}
 	x.close();	
 }
@@ -74,11 +74,11 @@ void MusicPlayer::init(Time t, int maxSongs){
 	if (!initSet){
 		cout << "Time set by INIT: " << t << endl << "Max Songs: " << maxSongs << endl;
 		library = new Song[maxSongs]; 
-		hashTable = new node*[maxSongs];
+		hashTable = new node*[maxSongs];		//I'm using chaining for this hash table
 		for (int i = 0; i < maxSongs; i++){
-			hashTable[i] = NULL;
+			hashTable[i] = NULL;			//initialize every character to NULL
 		}
-		this -> maxSongs = maxSongs;
+		this -> maxSongs = maxSongs;			
 		recentlyPlayedIndex = 0;
 		numSongs = 0;
 		time = t;
@@ -90,16 +90,16 @@ void MusicPlayer::init(Time t, int maxSongs){
 
 void MusicPlayer::add(Song s){
 	if (initSet){
-		cout << "Add song: " << s << endl;
-		library[numSongs] = s;
-		library[numSongs].setLastPlayedAt(time);
-		maxHeapify(numSongs);
+		cout << "Add song: " << s << endl;		
+		library[numSongs] = s;				//likeability will always be 0 for new songs, add to back of the heap
+		library[numSongs].setLastPlayedAt(time);	//lastPlayed time for new songs will be when it was added
+		maxHeapify(numSongs);				//if likeability of a song is less than 0, maxHeapify will move it behind new songs
 		
-		int hash = hashFunction(library[numSongs].getSongTitle());	
+		int hash = hashFunction(library[numSongs].getSongTitle());	//add to hashTable
 		cout << "hash: " << hash << endl;
 		node* n = new node;
-		n -> index = numSongs;
-		n -> next = hashTable[hash];
+		n -> index = numSongs;						//keep track of index to support O(1) runtime
+		n -> next = hashTable[hash];					//add to the beginning of the hash index
 		hashTable[hash] = n;
 		numSongs++;
 	} else {
@@ -108,36 +108,33 @@ void MusicPlayer::add(Song s){
 }
 
 void MusicPlayer::play(int n){	
-	for (int i = 0; i < n; i++){
-		Song songPlayed = library[0];
+	for (int i = 0; i < n; i++){				
+		Song songPlayed = library[0];					//Song with highest priority will be at heap index 0
 		cout << time << ' ' << songPlayed << endl;
-		time = time + songPlayed.getRuntime();
-		library[0].setLastPlayedAt(time);
-		int newIndex = maxHeapify(0);
-		recentlyPlayedIndex = newIndex;
+		time = time + songPlayed.getRuntime();				//advances the current time by the runtime of the song
+		library[0].setLastPlayedAt(time);				//update the lastPlayedTime of the song to current time
+		int newIndex = maxHeapify(0);					
+		recentlyPlayedIndex = newIndex;					//keep track of this for LIKE recently played song
 	}
 }
 void MusicPlayer::like(string title){
 	int hash = hashFunction(title);
-	//cout << "hash: " << hash << endl;
-	if (title.empty()){ 
+	if (title.empty()){ 		//user hasn't specified a title, like most recently played
 		cout << "Like most recently played song: " << library[recentlyPlayedIndex].getSongTitle() << endl;
 		library[recentlyPlayedIndex].setLikeability(library[recentlyPlayedIndex].getLikeability() + 1);
-		//cout << "likeability: " << library[recentlyPlayedIndex].getLikeability() << endl;
-	} else {
-		//cout << "Hash: " << hash << endl;
+	} else {			//user specified a title
 		node* np;
-		for (np = hashTable[hash]; np != NULL; np = np -> next){
-			int ind = np -> index;
+		for (np = hashTable[hash]; np != NULL; np = np -> next){	//search hashTable for title at hash value
+			int ind = np -> index;					
 			string st = library[ind].getSongTitle();
 			int blank;
 			for (int j = 0; j < st.length()-1; j++){
 				if (st[j] == ' ')
-					blank = j;
+					blank = j;				//find first blank character
 			}
-			st = st.substr(0, blank);
+			st = st.substr(0, blank);				//hash function only checks up to the first blank character in a title
 			if (title == st){
-				if (library[ind].getLikeability() >= 0)
+				if (library[ind].getLikeability() >= 0)	
 					library[ind].setLikeability(library[ind].getLikeability()+1);
 				if (library[ind].getLikeability() < 0)
 					library[ind].setLikeability(0);
@@ -147,7 +144,7 @@ void MusicPlayer::like(string title){
 		}
 	}
 }
-void MusicPlayer::dislike(string title){
+void MusicPlayer::dislike(string title){			//same implementation as like, but with decreasing likeability
 	int hash = hashFunction(title);
 	if (title.empty()){
 		cout << "Dislike most recently played song: " << library[recentlyPlayedIndex].getSongTitle() << endl;
@@ -243,17 +240,17 @@ int MusicPlayer::getPriority(Song s){
 int MusicPlayer::getNumSongs(){
 	return numSongs;
 }
-int MusicPlayer::hashFunction(string title){
-	int seed = 103; 
+int MusicPlayer::hashFunction(string title){		//hash key is the title string
+	int seed = 103; 				//insignificant prime number, avoids more collisions
 	int hash = 0;
 	for(int i = 0; i < title.length(); i++){
-		if (title[i] == ' ')
+		if (title[i] == ' ')			//only calculate hash up to the first space in title
 			break;
 		else 
-			hash = (hash * seed) + title[i];			
+			hash = (hash * seed) + title[i];		
 	}
 	if (hash < 0)
 		hash = hash * (-1);
-	return hash % maxSongs;
+	return hash % maxSongs;				
 }
 
