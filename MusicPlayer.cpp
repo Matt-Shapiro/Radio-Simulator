@@ -26,15 +26,15 @@ void MusicPlayer::run(char filename[]){
 			cout << "entering quit function" << endl;
 			break;
 		}
-		if (command == "INIT"){
-				Time t;
-				x >> t;
+		if (command == "INIT"){				
+				Time t;			
+				x >> t;				//time cin operator is overloaded
 				x >> maxSongs;
 				this -> init(t, maxSongs);
 		}
 		if (command == "ADD"){
 			Song s;
-			x >> s;
+			x >> s;					//Song cin operator is overloaded
 			this -> add(s);
 		}	
 		if (command == "REST"){
